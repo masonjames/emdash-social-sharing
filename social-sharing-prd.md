@@ -4,7 +4,7 @@ status: draft
 priority: P1
 inspired_by: "Scriptless Social Sharing"
 plugin_id: "social-sharing"
-package_name: "@emdash-cms/plugin-social-sharing"
+package_name: "emdash-social-sharing"
 execution_mode: "Trusted-first, sandbox-compatible target"
 ---
 

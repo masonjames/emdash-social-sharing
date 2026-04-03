@@ -11,8 +11,8 @@ describe("socialSharingPlugin descriptor", () => {
 			id: SOCIAL_SHARING_PLUGIN_ID,
 			version: SOCIAL_SHARING_VERSION,
 			format: "native",
-			entrypoint: "@emdash-cms/plugin-social-sharing/plugin",
-			componentsEntry: "@emdash-cms/plugin-social-sharing/astro",
+			entrypoint: "emdash-social-sharing/plugin",
+			componentsEntry: "emdash-social-sharing/astro",
 		});
 	});
 });

@@ -1,4 +1,4 @@
-# @emdash-cms/plugin-social-sharing
+# emdash-social-sharing
 
 Privacy-light social sharing for EmDash.
 
@@ -12,7 +12,7 @@ This plugin gives you:
 
 ## Status
 
-`@emdash-cms/plugin-social-sharing` is a **native / trusted EmDash plugin**.
+`emdash-social-sharing` is a **native / trusted EmDash plugin**.
 
 That means:
 
@@ -20,19 +20,20 @@ That means:
 - do **not** install it in `sandboxed: []`,
 - it is npm/source publishable,
 - it is **not** marketplace-bundleable under current EmDash plugin rules because it ships Portable Text rendering components.
+- it is installed officially as a trusted npm package through `astro.config.mjs`, not through the admin marketplace installer.
 
 ## Install
 
 ```bash
-pnpm add @emdash-cms/plugin-social-sharing
+pnpm add emdash-social-sharing
 ```
 
 ## Register the plugin
 
-```ts
+```js
 import { defineConfig } from "astro/config";
 import { emdash } from "emdash/astro";
-import { socialSharingPlugin } from "@emdash-cms/plugin-social-sharing";
+import { socialSharingPlugin } from "emdash-social-sharing";
 
 export default defineConfig({
 	integrations: [
@@ -43,11 +44,13 @@ export default defineConfig({
 });
 ```
 
+Save that in `astro.config.mjs`.
+
 ## Theme usage
 
 ```astro
 ---
-import { SocialShare } from "@emdash-cms/plugin-social-sharing/astro";
+import { SocialShare } from "emdash-social-sharing/astro";
 
 const canonicalUrl = post.seo?.canonicalUrl ?? Astro.url.href;
 const shareTitle = post.title;
@@ -150,7 +153,7 @@ This package is intentionally a **native / trusted** plugin because it depends o
 - `admin.portableTextBlocks`, and
 - `componentsEntry` for site-side Astro block rendering.
 
-Under current EmDash rules, that means it **cannot** be published as an admin-installable marketplace bundle. It is ready for npm/config-based installation, but a marketplace version would require either:
+Under current EmDash rules, that means it **cannot** be published as an admin-installable marketplace bundle with `emdash plugin publish`. The official installation path for this package is npm + `astro.config.mjs`. A marketplace version would require either:
 
 - EmDash marketplace support for native plugins, or
 - a separate standard-format plugin with a reduced feature set.

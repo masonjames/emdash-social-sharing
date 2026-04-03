@@ -1,5 +1,5 @@
 {
-  "name": "@emdash-cms/plugin-social-sharing",
+  "name": "emdash-social-sharing",
   "version": "0.1.0",
   "description": "Privacy-light social sharing controls for EmDash content and themes",
   "type": "module",
