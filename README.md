@@ -131,6 +131,30 @@ The only enhancement script is the small copy-link helper. Without JavaScript, r
 - Because this is a render-layer plugin, changing sitewide settings on a fully static site still requires a rebuild/redeploy before the public HTML updates.
 - For the most precise share text, pass `title` from your theme template when you use the component directly.
 
+## Publishing
+
+This repo is set up for npm publication as a **public package**.
+
+- CI runs `pnpm check` and `npm pack --dry-run` on pushes and pull requests.
+- The npm publish workflow runs on `v*.*.*` tags and `workflow_dispatch`.
+- Tag releases must match `package.json` exactly — for example, package version `0.2.0` must be published from tag `v0.2.0`.
+- The GitHub Actions workflow expects a repository secret named `NPM_TOKEN`.
+- The publish job uses npm provenance (`npm publish --provenance`).
+
+## Marketplace compatibility
+
+Current EmDash marketplace publishing is for **standard / sandboxed** plugins bundled with `emdash plugin bundle` / `emdash plugin publish`.
+
+This package is intentionally a **native / trusted** plugin because it depends on:
+
+- `admin.portableTextBlocks`, and
+- `componentsEntry` for site-side Astro block rendering.
+
+Under current EmDash rules, that means it **cannot** be published as an admin-installable marketplace bundle. It is ready for npm/config-based installation, but a marketplace version would require either:
+
+- EmDash marketplace support for native plugins, or
+- a separate standard-format plugin with a reduced feature set.
+
 ## Development
 
 ```bash
