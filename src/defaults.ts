@@ -9,7 +9,7 @@ import type {
 } from "./types.js";
 
 export const SOCIAL_SHARING_PLUGIN_ID = "social-sharing";
-export const SOCIAL_SHARING_VERSION = "0.1.0";
+export const SOCIAL_SHARING_VERSION = "0.1.1";
 
 export const SHARE_NETWORKS = ["x", "linkedin", "bluesky"] as const satisfies readonly ShareNetwork[];
 export const SHARE_ACTION_ORDER = ["x", "linkedin", "bluesky", "email", "copy"] as const satisfies readonly ShareActionId[];

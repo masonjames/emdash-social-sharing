@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_SOCIAL_SHARING_SETTINGS } from "../src/defaults.js";
 import { extractStoredSettingsValues } from "../src/render-context.js";
-import { resolveSettings } from "../src/settings.js";
+import { resolveSettings, serializeSettingsForStorage } from "../src/settings.js";
 
 describe("resolveSettings", () => {
 	it("returns defaults when no settings have been saved yet", () => {
@@ -89,5 +89,35 @@ describe("extractStoredSettingsValues", () => {
 			publisherHandleX: "emdash",
 			defaultVariant: "icon-label",
 		});
+	});
+});
+
+describe("serializeSettingsForStorage", () => {
+	it("round-trips normalized settings through the marketplace storage shape", () => {
+		const normalized = resolveSettings({
+			enableX: false,
+			enableLinkedIn: true,
+			enableBluesky: true,
+			includeEmailShare: true,
+			includeCopyLink: false,
+			defaultVariant: "icon-label",
+			openInNewTab: false,
+			publisherHandleX: " @emdash ",
+			publisherHandleBluesky: " @team.bsky.social ",
+		});
+
+		expect(serializeSettingsForStorage(normalized)).toEqual({
+			enableX: false,
+			enableLinkedIn: true,
+			enableBluesky: true,
+			includeEmailShare: true,
+			includeCopyLink: false,
+			defaultVariant: "icon-label",
+			openInNewTab: false,
+			publisherHandleX: "emdash",
+			publisherHandleBluesky: "team.bsky.social",
+		});
+
+		expect(resolveSettings(serializeSettingsForStorage(normalized))).toEqual(normalized);
 	});
 });

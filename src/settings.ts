@@ -14,6 +14,18 @@ import type {
 	SocialSharingSettings,
 } from "./types.js";
 
+export interface StoredSocialSharingSettings {
+	enableX: boolean;
+	enableLinkedIn: boolean;
+	enableBluesky: boolean;
+	includeEmailShare: boolean;
+	includeCopyLink: boolean;
+	defaultVariant: ShareVariant;
+	openInNewTab: boolean;
+	publisherHandleX: string;
+	publisherHandleBluesky: string;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -82,7 +94,9 @@ export function canonicalizeShareActions(values: Iterable<unknown>): ShareAction
 	return SHARE_ACTION_ORDER.filter((action) => enabled.has(action));
 }
 
-export function resolveSettings(raw?: Record<string, unknown> | null): SocialSharingSettings {
+export function resolveSettings(
+	raw?: Record<string, unknown> | StoredSocialSharingSettings | null,
+): SocialSharingSettings {
 	const record = isRecord(raw) ? raw : {};
 
 	const enabledNetworks = Array.isArray(record.enabledNetworks)
@@ -133,5 +147,21 @@ export function resolveSettings(raw?: Record<string, unknown> | null): SocialSha
 			...(x ? { x } : {}),
 			...(bluesky ? { bluesky } : {}),
 		},
+	};
+}
+
+export function serializeSettingsForStorage(
+	settings: SocialSharingSettings,
+): StoredSocialSharingSettings {
+	return {
+		enableX: settings.enabledNetworks.includes("x"),
+		enableLinkedIn: settings.enabledNetworks.includes("linkedin"),
+		enableBluesky: settings.enabledNetworks.includes("bluesky"),
+		includeEmailShare: settings.includeEmailShare,
+		includeCopyLink: settings.includeCopyLink,
+		defaultVariant: settings.defaultVariant,
+		openInNewTab: settings.openInNewTab,
+		publisherHandleX: settings.publisherHandles.x ?? "",
+		publisherHandleBluesky: settings.publisherHandles.bluesky ?? "",
 	};
 }

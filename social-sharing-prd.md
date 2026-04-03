@@ -5,7 +5,7 @@ priority: P1
 inspired_by: "Scriptless Social Sharing"
 plugin_id: "social-sharing"
 package_name: "emdash-social-sharing"
-execution_mode: "Trusted-first, sandbox-compatible target"
+execution_mode: "Split-variant delivery: trusted full plugin + marketplace companion"
 ---
 
 # PRD: EmDash Social Sharing
@@ -15,6 +15,15 @@ execution_mode: "Trusted-first, sandbox-compatible target"
 EmDash Social Sharing gives publishers privacy-light sharing controls for content pages without requiring third-party JavaScript SDKs. The greenfield product should be **explicit-placement and no-script by default**, with a small enhancement only where it improves usability, such as copy-to-clipboard.
 
 The product is meant to cover the practical sharing use case, not social analytics or vendor lock-in.
+
+## Delivery model
+
+The product now ships in two supported variants:
+
+1. **Trusted package** — `emdash-social-sharing` from npm, installed in `astro.config.mjs`; this is the full-featured variant with Portable Text block registration and Astro rendering.
+2. **Marketplace companion** — a separate standard/sandboxed package source in `marketplace/`; this variant manages sitewide defaults through Block Kit and is the artifact path for `emdash plugin publish`.
+
+A hybrid mode is also supported: install the marketplace companion for settings, then import `SocialShare` from `emdash-social-sharing/astro` in a trusted theme.
 
 ## Problem
 
@@ -135,9 +144,17 @@ There is no v1 auto-append behavior because that would require brittle assumptio
 
 ### Plugin surfaces
 
+#### Trusted package
+
 - `admin.settingsSchema`
 - `admin.portableTextBlocks`
 - `componentsEntry`
+
+#### Marketplace companion
+
+- `adminPages`
+- `adminWidgets`
+- `routes.admin` (Block Kit interaction route)
 
 ### Capabilities
 
@@ -149,7 +166,8 @@ No storage in v1.
 
 ### Routes
 
-No routes in v1.
+- Trusted package: no routes
+- Marketplace companion: reserved `admin` route only for Block Kit page/widget interactions
 
 ### Settings
 
@@ -192,9 +210,10 @@ Mitigation: document a simple editorial rule for theme placement vs block placem
 
 ## Acceptance criteria
 
-- The plugin can be enabled with no capabilities.
-- Editors can insert a `socialShare` block.
-- Theme developers can import a share component.
+- The trusted package can be enabled with no capabilities.
+- Editors can insert a `socialShare` block when the trusted package is installed.
+- Theme developers can import a share component from `emdash-social-sharing/astro`.
+- The marketplace companion can be bundled and validated with `emdash plugin bundle`.
 - No third-party SDK is required for the supported sharing actions.
 
 ## Open questions

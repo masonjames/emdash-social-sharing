@@ -12,23 +12,34 @@ This plugin gives you:
 
 ## Status
 
-`emdash-social-sharing` is a **native / trusted EmDash plugin**.
+`emdash-social-sharing` is the **trusted / native** package for this plugin family.
 
 That means:
 
 - install it in `plugins: []`,
 - do **not** install it in `sandboxed: []`,
-- it is npm/source publishable,
-- it is **not** marketplace-bundleable under current EmDash plugin rules because it ships Portable Text rendering components.
-- it is installed officially as a trusted npm package through `astro.config.mjs`, not through the admin marketplace installer.
+- it is the package you install from npm,
+- it remains named exactly `emdash-social-sharing`,
+- it provides the full feature set: admin settings, Astro rendering, and the `socialShare` Portable Text block.
 
-## Install
+This repository now also includes a separate **marketplace-safe companion** under `marketplace/`.
+
+That companion:
+
+- is standard / sandboxed,
+- is bundleable with `emdash plugin bundle` / `emdash plugin publish`,
+- manages sitewide defaults through Block Kit,
+- does **not** provide Portable Text block registration or site-side Astro rendering.
+
+## Install Modes
+
+### 1. Trusted full plugin
 
 ```bash
 pnpm add emdash-social-sharing
 ```
 
-## Register the plugin
+Register it in `astro.config.mjs`:
 
 ```js
 import { defineConfig } from "astro/config";
@@ -45,6 +56,35 @@ export default defineConfig({
 ```
 
 Save that in `astro.config.mjs`.
+
+### 2. Marketplace companion
+
+The marketplace-safe companion lives in `marketplace/` in this repository. It is a separate standard-format plugin source package used to produce a marketplace tarball.
+
+Use the marketplace companion when you want:
+
+- admin-installable settings management, and
+- sandboxed execution through the EmDash marketplace.
+
+Use the trusted npm package when you want:
+
+- the `socialShare` Portable Text block,
+- direct Astro rendering via `emdash-social-sharing/astro`, or
+- full parity with the current trusted plugin.
+
+### 3. Hybrid mode
+
+Hybrid mode is supported:
+
+- install the marketplace companion for admin-managed defaults, and
+- import `SocialShare` from `emdash-social-sharing/astro` in your theme.
+
+Do **not** enable both runtimes at the same time. Use either:
+
+- the trusted runtime, or
+- the marketplace runtime,
+
+but not both.
 
 ## Theme usage
 
@@ -136,27 +176,46 @@ The only enhancement script is the small copy-link helper. Without JavaScript, r
 
 ## Publishing
 
-This repo is set up for npm publication as a **public package**.
+This repo now ships two release paths:
 
-- CI runs `pnpm check` and `npm pack --dry-run` on pushes and pull requests.
-- The npm publish workflow runs on `v*.*.*` tags and `workflow_dispatch`.
-- Tag releases must match `package.json` exactly — for example, package version `0.2.0` must be published from tag `v0.2.0`.
-- The GitHub Actions workflow expects a repository secret named `NPM_TOKEN`.
-- The publish job uses npm provenance (`npm publish --provenance`).
+### Trusted npm package
+
+- the root package is published to npm as `emdash-social-sharing`
+- CI runs `pnpm check` and `npm pack --dry-run`
+- the npm publish workflow runs on `v*.*.*` tags and `workflow_dispatch`
+- tag releases must match `package.json` exactly
+- the publish job uses npm provenance (`npm publish --provenance`)
+
+### Marketplace companion
+
+- the companion source package lives in `marketplace/`
+- validation runs through `pnpm --dir marketplace check`
+- marketplace bundle validation runs `emdash plugin bundle --dir marketplace --validateOnly`
+- this is the path to use before `emdash plugin publish` for the marketplace artifact
 
 ## Marketplace compatibility
 
 Current EmDash marketplace publishing is for **standard / sandboxed** plugins bundled with `emdash plugin bundle` / `emdash plugin publish`.
 
-This package is intentionally a **native / trusted** plugin because it depends on:
+The root `emdash-social-sharing` package is intentionally a **native / trusted** plugin because it depends on:
 
 - `admin.portableTextBlocks`, and
 - `componentsEntry` for site-side Astro block rendering.
 
-Under current EmDash rules, that means it **cannot** be published as an admin-installable marketplace bundle with `emdash plugin publish`. The official installation path for this package is npm + `astro.config.mjs`. A marketplace version would require either:
+That root npm package is therefore **not** itself marketplace-bundleable.
 
-- EmDash marketplace support for native plugins, or
-- a separate standard-format plugin with a reduced feature set.
+To support marketplace installation, this repository now includes a separate standard-format companion in `marketplace/` that:
+
+- reuses the same settings contract,
+- exposes a Block Kit settings page and dashboard widget,
+- validates with `emdash plugin bundle --validateOnly`, and
+- is the correct source package for `emdash plugin publish`.
+
+Feature parity remains intentionally split under current EmDash rules:
+
+- trusted package: full parity, including PT blocks and Astro rendering
+- marketplace companion: settings management only
+- hybrid mode: marketplace settings + direct Astro component import
 
 ## Development
 
