@@ -1,0 +1,396 @@
+---
+import { loadSocialSharingSettings } from "../render-context.js";
+import { normalizePublisherHandles } from "../settings.js";
+import { resolveSocialShareModel } from "../share-model.js";
+import type { SocialShareComponentProps } from "../types.js";
+import { getSocialShareIcon } from "./icons.js";
+
+const props = Astro.props as SocialShareComponentProps;
+const className = typeof props.class === "string" ? props.class : undefined;
+const siteSettings = await loadSocialSharingSettings(Astro.locals as Record<string, unknown>);
+const runtimePublisherHandles = {
+	...siteSettings.publisherHandles,
+	...normalizePublisherHandles(props.publisherHandles),
+};
+const model = resolveSocialShareModel({
+	requestUrl: Astro.url,
+	siteSettings,
+	componentProps: props,
+});
+const showIcons = model?.variant === "icon-label";
+const hasCopyAction = model?.actions.some((action) => action.id === "copy") ?? false;
+const needsRuntimeTitleHydration =
+	!model?.title &&
+	(model?.actions.some((action) => action.id === "x" || action.id === "bluesky" || action.id === "email") ?? false);
+const needsRuntimeEnhancement = hasCopyAction || needsRuntimeTitleHydration;
+---
+
+{model && (
+	<nav
+		class:list={["emdash-social-share", className]}
+		data-variant={model.variant}
+		data-density={model.density}
+		data-align={model.alignment}
+		aria-label={model.ariaLabel}
+	>
+		<ul class="emdash-social-share__list" role="list">
+			{model.actions.map((action) => (
+				<li class="emdash-social-share__item">
+					{action.id === "copy" ? (
+						<details
+							class="emdash-social-share__copy"
+							data-social-share-copy
+							data-copy-url={action.copyValue}
+						>
+							<summary class="emdash-social-share__action" data-action={action.id}>
+								{showIcons && (
+									<span
+										class="emdash-social-share__icon"
+										aria-hidden="true"
+										set:html={getSocialShareIcon(action.id)}
+									/>
+								)}
+								<span class="emdash-social-share__label">{action.label}</span>
+							</summary>
+							<div class="emdash-social-share__copy-panel">
+								<input
+									class="emdash-social-share__copy-input"
+									type="text"
+									value={action.copyValue}
+									readonly
+									data-copy-input
+									aria-label="Link to copy"
+								/>
+								<p class="emdash-social-share__copy-help">
+									If your browser blocks clipboard access, copy the link manually.
+								</p>
+								<p class="emdash-social-share__copy-status" data-copy-status aria-live="polite"></p>
+							</div>
+						</details>
+					) : (
+						<a
+							class="emdash-social-share__action"
+							data-action={action.id}
+							data-share-action={action.id}
+							data-share-url={model.url}
+							data-share-title={model.title ?? undefined}
+							data-share-handle-x={runtimePublisherHandles.x ?? undefined}
+							data-share-handle-bluesky={runtimePublisherHandles.bluesky ?? undefined}
+							href={action.href}
+							target={model.openInNewTab ? "_blank" : undefined}
+							rel={model.openInNewTab ? "noopener noreferrer" : undefined}
+						>
+							{showIcons && (
+								<span
+									class="emdash-social-share__icon"
+									aria-hidden="true"
+									set:html={getSocialShareIcon(action.id)}
+								/>
+							)}
+							<span class="emdash-social-share__label">{action.label}</span>
+						</a>
+					)}
+				</li>
+			))}
+		</ul>
+	</nav>
+)}
+
+{needsRuntimeEnhancement && (
+	<script is:inline>
+		(() => {
+			if (typeof window === "undefined") return;
+			if (window.__emdashSocialShareBound) return;
+			window.__emdashSocialShareBound = true;
+
+			const resetTimers = new WeakMap();
+
+			const normalizeHandle = (value) => (typeof value === "string" ? value.replace(/^@+/, "").trim() : "");
+
+			const buildShareHref = (action, shareUrl, title, handleX, handleBluesky) => {
+				if (!shareUrl || !title) return null;
+
+				switch (action) {
+					case "x": {
+						const url = new URL("https://twitter.com/intent/tweet");
+						url.searchParams.set("url", shareUrl);
+						url.searchParams.set("text", title);
+						const via = normalizeHandle(handleX);
+						if (via) url.searchParams.set("via", via);
+						return url.toString();
+					}
+					case "bluesky": {
+						const url = new URL("https://bsky.app/intent/compose");
+						const via = normalizeHandle(handleBluesky);
+						url.searchParams.set("text", `${title} ${shareUrl}${via ? ` via @${via}` : ""}`);
+						return url.toString();
+					}
+					case "email": {
+						const url = new URL("mailto:");
+						url.searchParams.set("subject", title);
+						url.searchParams.set("body", `${title}\n\n${shareUrl}`);
+						return url.toString();
+					}
+					default:
+						return null;
+				}
+			};
+
+			const hydrateShareLinks = () => {
+				const runtimeTitle = document.title.trim();
+				if (!runtimeTitle) return;
+
+				for (const link of document.querySelectorAll("a[data-share-action]")) {
+					if (!(link instanceof HTMLAnchorElement)) continue;
+					if (link.dataset.shareTitle) continue;
+
+					const href = buildShareHref(
+						link.dataset.shareAction,
+						link.dataset.shareUrl,
+						runtimeTitle,
+						link.dataset.shareHandleX,
+						link.dataset.shareHandleBluesky,
+					);
+					if (href) link.href = href;
+				}
+			};
+
+			const setStatus = (details, message, copied) => {
+				const status = details.querySelector("[data-copy-status]");
+				if (!(status instanceof HTMLElement)) return;
+
+				status.textContent = message;
+				if (copied) {
+					details.dataset.copied = "true";
+				} else {
+					delete details.dataset.copied;
+				}
+
+				const existingTimer = resetTimers.get(details);
+				if (existingTimer) window.clearTimeout(existingTimer);
+
+				const timer = window.setTimeout(() => {
+					status.textContent = "";
+					delete details.dataset.copied;
+				}, 2200);
+
+				resetTimers.set(details, timer);
+			};
+
+			const revealManualCopy = (details, message) => {
+				details.open = true;
+				const input = details.querySelector("[data-copy-input]");
+				if (input instanceof HTMLInputElement) {
+					window.requestAnimationFrame(() => {
+						input.focus();
+						input.select();
+					});
+				}
+				setStatus(details, message, false);
+			};
+
+			hydrateShareLinks();
+
+			document.addEventListener("click", async (event) => {
+				const target = event.target;
+				if (!(target instanceof Element)) return;
+
+				const shareLink = target.closest("a[data-share-action]");
+				if (shareLink instanceof HTMLAnchorElement && !shareLink.dataset.shareTitle) {
+					const runtimeTitle = document.title.trim();
+					const href = buildShareHref(
+						shareLink.dataset.shareAction,
+						shareLink.dataset.shareUrl,
+						runtimeTitle,
+						shareLink.dataset.shareHandleX,
+						shareLink.dataset.shareHandleBluesky,
+					);
+					if (href) shareLink.href = href;
+				}
+
+				const summary = target.closest("[data-social-share-copy] > summary");
+				if (!(summary instanceof HTMLElement)) return;
+
+				const details = summary.parentElement;
+				if (!(details instanceof HTMLDetailsElement)) return;
+
+				const copyUrl = details.dataset.copyUrl;
+				if (!copyUrl) return;
+
+				event.preventDefault();
+
+				if (!navigator.clipboard?.writeText) {
+					revealManualCopy(details, "Copy the link manually.");
+					return;
+				}
+
+				try {
+					await navigator.clipboard.writeText(copyUrl);
+					details.open = false;
+					setStatus(details, "Link copied.", true);
+				} catch {
+					revealManualCopy(details, "Copy the link manually.");
+				}
+			});
+		})();
+	</script>
+)}
+
+<style>
+	.emdash-social-share {
+		--share-border: color-mix(in srgb, currentColor 16%, transparent);
+		--share-surface: color-mix(in srgb, currentColor 5%, transparent);
+		--share-surface-hover: color-mix(in srgb, currentColor 10%, transparent);
+		--share-surface-active: color-mix(in srgb, currentColor 14%, transparent);
+		--share-shadow: 0 10px 25px color-mix(in srgb, currentColor 12%, transparent);
+		--share-radius: 999px;
+		color: inherit;
+	}
+
+	.emdash-social-share__list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		justify-content: flex-start;
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.emdash-social-share[data-align="center"] .emdash-social-share__list {
+		justify-content: center;
+	}
+
+	.emdash-social-share[data-align="end"] .emdash-social-share__list {
+		justify-content: flex-end;
+	}
+
+	.emdash-social-share__item {
+		margin: 0;
+	}
+
+	.emdash-social-share__action {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.6rem;
+		min-height: 2.75rem;
+		padding: 0.7rem 1rem;
+		border: 1px solid var(--share-border);
+		border-radius: var(--share-radius);
+		background: var(--share-surface);
+		color: inherit;
+		font: inherit;
+		font-size: 0.95rem;
+		font-weight: 600;
+		line-height: 1.1;
+		text-decoration: none;
+		cursor: pointer;
+		transition:
+			background-color 150ms ease,
+			border-color 150ms ease,
+			box-shadow 150ms ease,
+			transform 150ms ease;
+	}
+
+	.emdash-social-share__action:hover {
+		background: var(--share-surface-hover);
+		box-shadow: var(--share-shadow);
+		transform: translateY(-1px);
+	}
+
+	.emdash-social-share__action:focus-visible {
+		outline: 2px solid currentColor;
+		outline-offset: 3px;
+	}
+
+	.emdash-social-share__icon {
+		display: inline-flex;
+		width: 1rem;
+		height: 1rem;
+		flex: 0 0 auto;
+	}
+
+	.emdash-social-share__icon :global(svg) {
+		width: 100%;
+		height: 100%;
+	}
+
+	.emdash-social-share[data-variant="text"] .emdash-social-share__action {
+		min-height: auto;
+		padding: 0;
+		background: transparent;
+		border: 0;
+		border-radius: 0;
+		font-weight: 500;
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+		box-shadow: none;
+	}
+
+	.emdash-social-share[data-variant="button-row"] .emdash-social-share__icon,
+	.emdash-social-share[data-variant="text"] .emdash-social-share__icon {
+		display: none;
+	}
+
+	.emdash-social-share[data-density="compact"] .emdash-social-share__action {
+		min-height: 2.35rem;
+		padding: 0.55rem 0.85rem;
+		font-size: 0.88rem;
+		gap: 0.45rem;
+	}
+
+	.emdash-social-share__copy {
+		position: relative;
+	}
+
+	.emdash-social-share__copy > summary {
+		list-style: none;
+	}
+
+	.emdash-social-share__copy > summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.emdash-social-share__copy-panel {
+		margin-top: 0.65rem;
+		padding: 0.85rem;
+		min-width: min(100%, 19rem);
+		border: 1px solid var(--share-border);
+		border-radius: 1rem;
+		background: color-mix(in srgb, currentColor 3%, transparent);
+	}
+
+	.emdash-social-share__copy-input {
+		width: 100%;
+		padding: 0.7rem 0.8rem;
+		border: 1px solid var(--share-border);
+		border-radius: 0.8rem;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+	}
+
+	.emdash-social-share__copy-help,
+	.emdash-social-share__copy-status {
+		margin: 0.6rem 0 0;
+		font-size: 0.82rem;
+		line-height: 1.45;
+		color: color-mix(in srgb, currentColor 72%, transparent);
+	}
+
+	.emdash-social-share__copy[data-copied="true"] .emdash-social-share__action {
+		background: var(--share-surface-active);
+		border-color: color-mix(in srgb, currentColor 36%, transparent);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.emdash-social-share__action {
+			transition: none;
+		}
+
+		.emdash-social-share__action:hover {
+			transform: none;
+		}
+	}
+</style>

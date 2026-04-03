@@ -1,0 +1,13 @@
+---
+import SocialShare from "./SocialShare.astro";
+import type { SocialShareBlockData } from "../types.js";
+
+const { node, class: className } = Astro.props as {
+	node?: SocialShareBlockData;
+	class?: string;
+};
+
+const block = node && node._type === "socialShare" ? node : null;
+---
+
+{block && <SocialShare block={block} class={className} />}
