@@ -13,6 +13,8 @@ describe("socialSharingPlugin descriptor", () => {
 			format: "native",
 			entrypoint: "emdash-social-sharing/plugin",
 			componentsEntry: "emdash-social-sharing/astro",
+			capabilities: [],
+			allowedHosts: [],
 		});
 	});
 });

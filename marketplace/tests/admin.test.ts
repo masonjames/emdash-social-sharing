@@ -12,7 +12,7 @@ function createContext(seed: Record<string, unknown> = {}) {
 	const store = new Map<string, unknown>(Object.entries(seed));
 
 	const ctx = {
-		plugin: { id: "social-sharing", version: "0.1.1" },
+		plugin: { id: "social-sharing", version: "0.1.2" },
 		storage: {},
 		kv: {
 			async get<T>(key: string) {

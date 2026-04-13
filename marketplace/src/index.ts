@@ -11,6 +11,7 @@ export function socialSharingMarketplacePlugin(): PluginDescriptor {
 		format: "standard",
 		entrypoint: "emdash-social-sharing-marketplace/sandbox",
 		capabilities: [],
+		allowedHosts: [],
 		adminPages: [
 			{
 				path: SOCIAL_SHARING_MARKETPLACE_SETTINGS_PATH,
